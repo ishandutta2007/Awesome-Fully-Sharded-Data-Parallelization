@@ -19,17 +19,12 @@ flowchart LR
     C --> D["Native PyTorch FSDP (2023-Present)<br>(Native Block-Forward CUDA Overlap)"]
 ```
 
-*   **The Asynchronous Parameter Server Era (~2012–2016)**
-    *   *Concept:* The early distributed infrastructure baseline (e.g., DistBelief). It relied on a centralized master-worker configuration: standalone worker nodes calculated independent gradients over data shards, sending them asynchronously to a central **Parameter Server** node that collected, averaged, and pushed updated weights back to the cluster.
-    *   *Limitation:* Created a severe centralized network bandwidth bottleneck. As cluster sizes expanded into dozens of nodes, the parameter server became choked by incoming connection lines, stalling worker throughput.
-*   **The Synchronous Distributed Data Parallel Era (DDP, ~2017–2020)**
-    *   *Concept:* Overcame master-worker limitations by introducing decentralized, bandwidth-optimal communication protocols [INDEX: 22]. Popularized by Baidu and Uber’s Horovod, and formalized via PyTorch's **DistributedDataParallel (DDP)**, it arranged GPUs into a logical ring topology. Each node process communicated exclusively with its immediate left and right neighbors, executing **Ring All-Reduce** mathematical steps to sum and synchronize gradients incrementally [INDEX: 22].
-    *   *Limitation:* Heavy VRAM redundancy [INDEX: 22]. Replicating 100% of the model weights, gradients, and optimizer states on *every single GPU* created a memory wall, preventing large networks from initializing on standalone cards [INDEX: 22].
-*   **The Zero Redundancy Optimizer Breakthrough (ZeRO, 2020–2022)**
-    *   *Concept:* Dismantled the memory duplication wall completely. Introduced by Microsoft’s DeepSpeed library, the **ZeRO (Zero Redundancy Optimizer)** framework proved that model states could be sharded across data-parallel processes without changing the underlying math [INDEX: 22]. ZeRO split the memory optimizations into three discrete stages: sharding optimizer states (Stage 1), gradients (Stage 2), and model parameters (Stage 3) [INDEX: 22].
-*   **The Native PyTorch FSDP Production Standard (~2023–Present)**
-    *   *Concept:* The current modern state-of-the-art infrastructure baseline. It takes the concepts of ZeRO-Stage 3 parameter sharding and bakes them straight into PyTorch's native C++ runtime layer [INDEX: 22].
-    *   *Significance:* It provides **Block-Fused Forward/Backward Overlapping** out-of-the-box. FSDP wraps individual layers or transformer blocks inside nested execution enclaves. As layer $L$ computes its forward pass tensors inside GPU SRAM, FSDP preemptively fetches the sharded parameters for layer $L+1$ via background communication streams, saturating Tensor Cores perfectly with near-zero software latency.
+| Era | Details | Year | Paper Link |
+|---|---|---|---|
+| [**The Asynchronous Parameter Server Era**](pages/async_param_server.md) | **Concept:** The early distributed baseline (e.g., DistBelief). Master-worker configuration.<br>**Limitation:** Severe centralized network bandwidth bottleneck. | 2012 | [Dean et al., 2012](https://papers.nips.cc/paper/4687-large-scale-distributed-deep-networks.pdf) |
+| [**The Synchronous Distributed Data Parallel Era (DDP)**](pages/sync_ddp.md) | **Concept:** Decentralized, bandwidth-optimal protocols. Ring All-Reduce.<br>**Limitation:** Heavy VRAM redundancy. | 2017 | [Sergeev & Del Balso, 2018](https://arxiv.org/abs/1802.05799) |
+| [**The Zero Redundancy Optimizer Breakthrough (ZeRO)**](pages/zero_optimizer.md) | **Concept:** Dismantled memory duplication. Sharded optimizer states, gradients, parameters. | 2020 | [Rajbhandari et al., 2020](https://arxiv.org/abs/1910.02054) |
+| [**The Native PyTorch FSDP Production Standard**](pages/pytorch_fsdp.md) | **Concept:** Modern baseline. Native C++ runtime layer.<br>**Significance:** Block-Fused Forward/Backward Overlapping. | 2023 | [Zhao et al., 2023](https://arxiv.org/abs/2304.11277) |
 
 ---
 
@@ -37,17 +32,11 @@ flowchart LR
 
 The FSDP architecture features specialized operational profiles engineered to let developers trade network communication bandwidth for maximum GPU memory optimization.
 
-- ### A. Full Sharding (FULL_SHARD / ZeRO-Stage 3)
-	*   **Mechanism:** Enforces absolute parameter de-allocation [INDEX: 22]. It shards the model parameters, gradients, and FP32 optimizer states uniformly across all available GPUs [INDEX: 11, 22]. Layers must execute an `All-Gather` step to temporarily reconstruct weights right before a forward or backward pass and immediately evict them from memory afterward [INDEX: 22].
-	*   **Pros:** Achieves maximal memory efficiency, unlocking the ability to train massive architectures containing hundreds of billions of parameters [INDEX: 15].
-
-- ### B. Grad-and-State Sharding (SHARD_GRAD_OP / ZeRO-Stage 2)
-	*   **Mechanism:** A hybrid compromise configuration [INDEX: 22]. The model parameters remain fully dense and replicated on every individual GPU during the forward pass execution [INDEX: 22]. However, the **Gradients and Optimizer States** are kept fully sharded across the cluster [INDEX: 22].
-	*   **Pros:** Slashes communication latency by removing the forward-pass parameter `All-Gather` network overhead entirely, optimal for smaller models where weights fit in VRAM but optimizer moments choke capacity.
-
-- ### C. Hybrid Sharding (HYBRID_SHARD)
-	*   **Mechanism:** Tailored explicitly for massive, multi-node cluster networks. It applies classic DDP replication within a single physical server rack node (where high-speed intra-node GPU-to-GPU NVLink lanes can duplicate tensors instantly) while enforcing Full Sharding across different distinct server nodes (where slower inter-node InfiniBand or Ethernet switches dominate).
-	*   **Pros:** Radically suppresses inter-node network communication traffic, preserving maximum training scale speeds.
+| Variant | Details | Year | Paper Link |
+|---|---|---|---|
+| [**Full Sharding (FULL_SHARD / ZeRO-Stage 3)**](pages/full_sharding.md) | **Mechanism:** Absolute parameter de-allocation. Shards uniformly.<br>**Pros:** Maximal memory efficiency. | 2020 | [Rajbhandari et al., 2020](https://arxiv.org/abs/1910.02054) |
+| [**Grad-and-State Sharding (SHARD_GRAD_OP / ZeRO-Stage 2)**](pages/grad_state_sharding.md) | **Mechanism:** Hybrid compromise. Parameters replicated, gradients/states sharded.<br>**Pros:** Slashes communication latency. | 2020 | [Rajbhandari et al., 2020](https://arxiv.org/abs/1910.02054) |
+| [**Hybrid Sharding (HYBRID_SHARD)**](pages/hybrid_sharding.md) | **Mechanism:** DDP within node, Full Sharding across nodes.<br>**Pros:** Suppresses inter-node network communication traffic. | 2023 | [Zhao et al., 2023](https://arxiv.org/abs/2304.11277) |
 
 ---
 
@@ -67,10 +56,10 @@ flowchart TB
     end
 ```
 
-*   **All-Gather Primitives**
-    *   *The Communication:* The inverse of slicing. It collects disjointed, sharded parameter pieces distributed across separate devices, reconstructing a unified, global weight matrix array across the localized GPU group right before a layer math step executes.
-*   **Reduce-Scatter Primitives**
-    *   *The Communication:* Sums and splits data. During the backward optimization pass, it sums the gradient arrays calculated over distinct data shards across all nodes, but redistributes only a localized, fractioned segment (a shard) of the total summed gradient tensor back to each individual card's optimizer slice.
+| Primitive | Details | Year | Paper Link |
+|---|---|---|---|
+| [**All-Gather Primitives**](pages/all_gather.md) | **The Communication:** Collects disjointed, sharded parameter pieces. | 1995 | [MPI Forum](https://www.mpi-forum.org/docs/) |
+| [**Reduce-Scatter Primitives**](pages/reduce_scatter.md) | **The Communication:** Sums and splits data across optimizer slices. | 1995 | [MPI Forum](https://www.mpi-forum.org/docs/) |
 
 ---
 
@@ -78,23 +67,20 @@ flowchart TB
 
 Deploying large-scale Fully Sharded Data Parallel pipelines across massive high-performance computing clusters introduces severe communication network bottlenecks and storage constraints.
 
-*   **The Network Interconnect and Intra-Node Communication Overhang**
-    *   *The Problem:* Because FSDP requires fetching and scattering parameters continuously at every layer step, it triggers massive, continuous network traffic. If the underlying cluster network fabrics are slow (e.g., standard ethernet nodes lacking high-speed InfiniBand switches), the communication time required for `All-Gather` primitives dwarfs tensor compute time, stalling training throughput.
-    *   *Mitigation:* Implementing **Backward Communication Overlapping and Pre-fetching**, forcing the FSDP scheduler to asynchronously stream parameter requests for layer $L-1$ in the background *while* layer $L$ is still calculating its backward gradient derivatives, hiding network latency completely.
-*   **The Activation Memory Accumulation Wall**
-    *   *The Problem:* Running massive mini-batch sizes across sharded data groups causes the volume of intermediate activation tensors cached to feed downstream backward passes to expand aggressively, saturating GPU VRAM and triggering Out-of-Memory system crashes.
-    *   *Mitigation:* Integrating **Activation Checkpointing (Rematerialization)**, which discards non-boundary activation tensors immediately after forward execution, independently recalculating them on-the-fly inside fast GPU registers only when the backward loop returns.
+| Challenge | Details | Year | Paper Link |
+|---|---|---|---|
+| [**The Network Interconnect and Intra-Node Communication Overhang**](pages/network_interconnect.md) | **The Problem:** Massive continuous network traffic.<br>**Mitigation:** Backward Communication Overlapping. | 2020 | [Rajbhandari et al., 2020](https://arxiv.org/abs/1910.02054) |
+| [**The Activation Memory Accumulation Wall**](pages/activation_memory.md) | **The Problem:** Saturated GPU VRAM from cached tensors.<br>**Mitigation:** Activation Checkpointing. | 2016 | [Chen et al., 2016](https://arxiv.org/abs/1604.06174) |
 
 ---
 
 ## 5. Frontier Real-World AI Infrastructure Applications
 
-*   **Pre-Training Web-Scale Foundational LLM Suites (Llama / Megatron-LM Clusters)**
-    *   *Application:* Serves as the primary post-training and pre-training orchestration framework used to optimize elite base architectures (e.g., Llama 3 405B, DeepSeek variations) [INDEX: 15, 22]. FSDP memory sharding is combined alongside Tensor Parallelism and Pipeline Parallelism to form massive 3D parallel distributed layouts, processing trillions of tokens across thousands of nodes stably.
-*   **High-Volume Generative Video Diffusion Simulation Scaling (Sora Class)**
-    *   *Application:* Drives large-scale physical simulation training workflows. Massive spatio-temporal video token cubes are sharded across wide FSDP data-parallel groups, allowing the linear ordinary differential equation (ODE) vector fields to optimize over multi-megapixel video sequences concurrently.
-*   **Distributed Low-Rank Post-Training Alignment Sprints (LoRA / QLoRA Tuning)**
-    *   *Application:* Tailors foundation architectures over domain-specific enterprise datasets (such as private corporate legal or healthcare portfolios) [INDEX: 11, 16]. Distributed FSDP configurations shard low-rank adapter gradients and optimizer moments across local commodity server nodes smoothly, accelerating alignment loops cheaply [INDEX: 16].
+| Application | Details | Year | Paper Link |
+|---|---|---|---|
+| [**Pre-Training Web-Scale Foundational LLM Suites**](pages/llm_suites.md) | **Application:** Primary post-training and pre-training orchestration. | 2022 | [Touvron et al., 2023](https://arxiv.org/abs/2302.13971) |
+| [**High-Volume Generative Video Diffusion Simulation Scaling**](pages/video_diffusion.md) | **Application:** Large-scale physical simulation training workflows (Sora Class). | 2024 | [OpenAI Sora](https://openai.com/research/video-generation-models-as-world-simulators) |
+| [**Distributed Low-Rank Post-Training Alignment Sprints**](pages/lora_qlora.md) | **Application:** Tailors foundation architectures over domain datasets. | 2021 | [Hu et al., 2021](https://arxiv.org/abs/2106.09685) |
 
 ---
 
