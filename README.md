@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="assets/banner.svg" alt="Banner" />
+</div>
+
 # Awesome-Fully-Sharded-Data-Parallelization
 ## Fully Sharded Data Parallel (FSDP): History, Progression, Variants, & Applications
 
@@ -7,7 +11,7 @@ While classic data parallelism duplicates an entire copy of the model weights, g
 
 ---
 
-## 1. The Macro Chronological Evolution
+## ⏳ 1. The Macro Chronological Evolution
 
 The technical framework governing distributed data distribution has transitioned from synchronous master-worker updates to fully decentralized ringing topologies and memory-sharded parameter-offloading infrastructure networks.
 
@@ -28,7 +32,7 @@ flowchart LR
 
 ---
 
-## 2. Core Functional & Sharding Variants
+## ⚙️ 2. Core Functional & Sharding Variants
 
 The FSDP architecture features specialized operational profiles engineered to let developers trade network communication bandwidth for maximum GPU memory optimization.
 
@@ -40,7 +44,7 @@ The FSDP architecture features specialized operational profiles engineered to le
 
 ---
 
-## 3. The FSDP Runtime Collective Primitive Matrix
+## 🧮 3. The FSDP Runtime Collective Primitive Matrix
 
 To synchronize parameters across disjointed hardware nodes seamlessly, the FSDP engine intersects the backpropagation loop using specialized collective primitives.
 
@@ -63,7 +67,7 @@ flowchart TB
 
 ---
 
-## 4. Production Engineering Challenges & Cluster Solutions
+## 🚧 4. Production Engineering Challenges & Cluster Solutions
 
 Deploying large-scale Fully Sharded Data Parallel pipelines across massive high-performance computing clusters introduces severe communication network bottlenecks and storage constraints.
 
@@ -74,7 +78,7 @@ Deploying large-scale Fully Sharded Data Parallel pipelines across massive high-
 
 ---
 
-## 5. Frontier Real-World AI Infrastructure Applications
+## 🚀 5. Frontier Real-World AI Infrastructure Applications
 
 | Application | Details | Year | Paper Link |
 |---|---|---|---|
