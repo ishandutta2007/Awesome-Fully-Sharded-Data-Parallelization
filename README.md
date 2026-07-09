@@ -13,7 +13,10 @@ The technical framework governing distributed data distribution has transitioned
 
 
 ```mermaid
-[Parameter Server Frameworks (2012)] ───> [Synchronous Ring All-Reduce (2017)] ───> [ZeRO Sharding Spectrum (DeepSpeed, 2020)] ───> [Native PyTorch FSDP (2023-Present)](Master-Worker Bandwidth Chokes)            (Decentralized Distributed Data Parallel)        (Heterogeneous CPU/NVMe Memory Offloads)         (Native Block-Forward CUDA Overlap)
+flowchart LR
+    A["Parameter Server Frameworks (2012)<br>(Master-Worker Bandwidth Chokes)"] --> B["Synchronous Ring All-Reduce (2017)<br>(Decentralized Distributed Data Parallel)"]
+    B --> C["ZeRO Sharding Spectrum (DeepSpeed, 2020)<br>(Heterogeneous CPU/NVMe Memory Offloads)"]
+    C --> D["Native PyTorch FSDP (2023-Present)<br>(Native Block-Forward CUDA Overlap)"]
 ```
 
 *   **The Asynchronous Parameter Server Era (~2012–2016)**
@@ -54,7 +57,14 @@ To synchronize parameters across disjointed hardware nodes seamlessly, the FSDP 
 
 
 ```mermaid
-FSDP Layer-Block Forward Pass[Input Data Shard] ───> [All-Gather Layer Parameter Weights] ───> [Compute Layer Forward Pass Math]│▼[Update Local Optimizer Slice] <─── [Reduce-Scatter Local Gradients] <─── [Evict Parameter Weights from VRAM]
+flowchart TB
+    subgraph FSDP["FSDP Layer-Block Forward Pass"]
+        A["Input Data Shard"] --> B["All-Gather Layer Parameter Weights"]
+        B --> C["Compute Layer Forward Pass Math"]
+        C --> D["Evict Parameter Weights from VRAM"]
+        D --> E["Reduce-Scatter Local Gradients"]
+        E --> F["Update Local Optimizer Slice"]
+    end
 ```
 
 *   **All-Gather Primitives**
