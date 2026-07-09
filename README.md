@@ -1,8 +1,15 @@
+<meta name="keywords" content="FSDP, Fully Sharded Data Parallel, PyTorch, Deep Learning, Distributed Training, ZeRO, Machine Learning, AI, Awesome List">
+<meta name="description" content="A curated list of resources for Fully Sharded Data Parallelization (FSDP).">
 <div align="center">
   <img src="assets/banner.svg" alt="Banner" />
 </div>
 
 # Awesome-Fully-Sharded-Data-Parallelization
+
+<div align="center">
+  <a href="https://github.com/ishandutta2007/Awesome-Awesome-Awesome"><img src="https://img.shields.io/badge/Awesome-%E2%9C%94-blueviolet?style=flat-square&logo=github" alt="Awesome"/></a>
+  <a href="https://discord.gg/jc4xtF58Ve"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord" /></a>
+</div>
 ## Fully Sharded Data Parallel (FSDP): History, Progression, Variants, & Applications
 
 **Fully Sharded Data Parallel (FSDP)** is a hardware-aware, distributed deep learning training framework designed to scale model optimization pipelines across massive multi-node GPU clusters. Formalized by Meta AI in 2023 and integrated natively into the PyTorch ecosystem, FSDP represents a milestone evolution over traditional data-parallel frameworks [INDEX: 22]. 
