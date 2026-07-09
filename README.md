@@ -121,3 +121,14 @@ Before updating this documentation repository layout, let me know how you would 
 * I can generate a **Markdown matrix table** tracking the explicit network communication overheads and cluster collective primitive patterns (`All-Reduce`, `Reduce-Scatter`, `All-Gather`) utilized by leading AI supercomputing infrastructures [INDEX: 22].
 * I can write a detailed technical explanation focusing on **how to configure mixed-precision policies (such as wrapping sharded parameters in FP16/BF16 computation types)** to maximize tensor core execution velocity safely [INDEX: 11, 22].
 
+
+##  Star History
+<div align="center">
+<a href="https://www.star-history.com/?repos=ishandutta2007%2FAwesome-Fully-Sharded-Data-Parallelization&type=date&legend=bottom-right">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=ishandutta2007/Awesome-Fully-Sharded-Data-Parallelization&type=date&theme=dark&legend=bottom-right" />
+<source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=ishandutta2007/Awesome-Fully-Sharded-Data-Parallelization&type=date&legend=bottom-right" />
+<img alt="Star History Chart" src="https://api.star-history.com/chart?repos=ishandutta2007/Awesome-Fully-Sharded-Data-Parallelization&type=date&legend=bottom-right" />
+</picture>
+</a>
+</div>
